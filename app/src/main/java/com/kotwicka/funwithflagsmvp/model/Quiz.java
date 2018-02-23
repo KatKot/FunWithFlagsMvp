@@ -1,6 +1,7 @@
 package com.kotwicka.funwithflagsmvp.model;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -16,6 +17,7 @@ public class Quiz {
     private int numberOfGuesses;
     private int numberOfCorrectGuesses;
     private int questionNumber;
+    private int numberOfChoices;
 
     public Quiz() {
         this.countries = new ArrayList<>();
@@ -24,11 +26,12 @@ public class Quiz {
         this.numberOfCorrectGuesses = 0;
         this.numberOfCorrectGuesses = 0;
         this.questionNumber = 0;
+        this.numberOfChoices = 0;
     }
 
     public String selectCountry() {
         final String selectedCountry = selectedCountries.remove(0);
-        correctCountryName = selectedCountry;
+        correctCountryName = getCountryName(selectedCountry);
         ++questionNumber;
         return selectedCountry;
     }
@@ -56,4 +59,24 @@ public class Quiz {
     public int getQuestionNumber() {
         return questionNumber;
     }
- }
+
+    public int getNumberOfChoices() {
+        return numberOfChoices;
+    }
+
+    public void setNumberOfChoices(int numberOfChoices) {
+        this.numberOfChoices = numberOfChoices;
+    }
+
+    public boolean isCorrectAnswer(final String country) {
+        return country.equals(correctCountryName);
+    }
+
+    public String getCorrectCountryName() {
+        return correctCountryName;
+    }
+
+    public String getCountryName(String country) {
+        return country.substring(country.indexOf("-") + 1, country.indexOf(".")).replace("_", " ");
+    }
+}

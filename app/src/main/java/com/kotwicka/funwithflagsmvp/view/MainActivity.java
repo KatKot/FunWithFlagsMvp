@@ -9,7 +9,10 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.kotwicka.funwithflagsmvp.R;
@@ -18,6 +21,8 @@ import com.kotwicka.funwithflagsmvp.presenter.MainPresenter;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 
 import butterknife.BindView;
@@ -30,6 +35,7 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
     private static final String CHOICES = "pref_numberOfChoices";
     private static final String REGIONS = "pref_regionsToInclude";
 
+    private boolean hasPreferencesChanged = true;
     private QuizContract.Presenter mainPresenter;
     private SharedPreferences sharedPreferences;
 
@@ -40,6 +46,20 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
     @BindView(R.id.questionNumberTextView)
     TextView questionNumberTextView;
 
+    @BindView(R.id.row1LinearLayout)
+    LinearLayout answersRow1;
+
+    @BindView(R.id.row2LinearLayout)
+    LinearLayout answersRow2;
+
+    @BindView(R.id.row3LinearLayout)
+    LinearLayout answersRow3;
+
+    @BindView(R.id.row4LinearLayout)
+    LinearLayout answersRow4;
+
+    LinearLayout[] answerLayouts;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,6 +68,7 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
         setSupportActionBar(toolbar);
         ButterKnife.bind(this);
 
+        this.answerLayouts = new LinearLayout[]{answersRow1, answersRow2, answersRow3, answersRow4};
         this.mainPresenter = new MainPresenter(this);
         this.sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
@@ -56,7 +77,10 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
     @Override
     protected void onStart() {
         super.onStart();
-        mainPresenter.initQuiz(sharedPreferences.getStringSet(REGIONS, null), getAssets());
+        if (hasPreferencesChanged) {
+            mainPresenter.initQuiz(sharedPreferences.getStringSet(REGIONS, null), Integer.valueOf(sharedPreferences.getString(CHOICES, null)), getAssets());
+            hasPreferencesChanged = false;
+        }
     }
 
     @Override
@@ -98,7 +122,16 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
     }
 
     @Override
-    public void setCountryNameChoices(Set<String> countryNames) {
-
+    public void setCountryNameChoices(final List<String> countryNames) {
+        for (LinearLayout linearLayout : answerLayouts) {
+            for (int i = 0; i < linearLayout.getChildCount(); i++) {
+                Button button = (Button) linearLayout.getChildAt(i);
+                if (!countryNames.isEmpty()) {
+                    button.setText(countryNames.remove(0));
+                } else {
+                    button.setVisibility(View.GONE);
+                }
+            }
+        }
     }
 }

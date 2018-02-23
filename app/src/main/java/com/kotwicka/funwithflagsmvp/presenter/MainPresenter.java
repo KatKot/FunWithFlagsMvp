@@ -8,6 +8,11 @@ import com.kotwicka.funwithflagsmvp.model.Quiz;
 
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 
 public class MainPresenter implements QuizContract.Presenter {
@@ -25,17 +30,35 @@ public class MainPresenter implements QuizContract.Presenter {
     }
 
     @Override
-    public void initQuiz(final Set<String> regions, final AssetManager assets) {
+    public void initQuiz(final Set<String> regions, final int choices, final AssetManager assets) {
         this.quiz = new Quiz();
         loadCountries(regions, assets);
+        quiz.setNumberOfChoices(choices);
         selectQuizCountries();
-        loadQuestions();
+        loadNextQuestion();
     }
 
-    private void loadQuestions() {
+    private void loadNextQuestion() {
         final String selectedCountry = quiz.selectCountry();
         mainView.setQuestionNumber(quiz.getQuestionNumber(), Quiz.NUMBER_OF_QUESTIONS);
         mainView.setFlag(createFlagPath(selectedCountry));
+        mainView.setCountryNameChoices(selectCountryNameChoices());
+    }
+
+    private List<String> selectCountryNameChoices() {
+        final List<String> selectedChoices = new ArrayList<>();
+        while (selectedChoices.size() < quiz.getNumberOfChoices()) {
+            String country = quiz.getCountryAt(random.nextInt(quiz.getCountriesSize()));
+            String countryName = quiz.getCountryName(country);
+            if (!selectedChoices.contains(countryName)) {
+                selectedChoices.add(countryName);
+            }
+        }
+        if (!selectedChoices.contains(quiz.getCorrectCountryName())) {
+            selectedChoices.add(random.nextInt(selectedChoices.size()), quiz.getCorrectCountryName());
+            selectedChoices.remove(selectedChoices.size() - 1);
+        }
+        return selectedChoices;
     }
 
     private String createFlagPath(final String selectedCountry) {
