@@ -3,6 +3,7 @@ package com.kotwicka.funwithflagsmvp.view;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -22,6 +23,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.kotwicka.funwithflagsmvp.R;
 import com.kotwicka.funwithflagsmvp.contracts.QuizContract;
@@ -29,12 +31,14 @@ import com.kotwicka.funwithflagsmvp.presenter.MainPresenter;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class MainActivity extends AppCompatActivity implements QuizContract.View, View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements QuizContract.View, View.OnClickListener, SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
@@ -88,6 +92,7 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
         this.shakeAnimation = AnimationUtils.loadAnimation(this, R.anim.incorrect_shake);
         this.shakeAnimation.setRepeatCount(3);
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+        PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
     }
 
     @Override
@@ -101,23 +106,18 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent preferenceIntent = new Intent(this, SettingsActivity.class);
+            startActivity(preferenceIntent);
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -146,6 +146,7 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
                     button.setText(countryNames.remove(0));
                     button.setOnClickListener(this);
                     button.setEnabled(true);
+                    button.setVisibility(View.VISIBLE);
                 } else {
                     button.setVisibility(View.GONE);
                 }
@@ -230,6 +231,23 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
             for (int i = 0; i < linearLayout.getChildCount(); i++) {
                 Button button = (Button) linearLayout.getChildAt(i);
                 button.setEnabled(false);
+            }
+        }
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        hasPreferencesChanged = true;
+        if (key.equals(REGIONS)) {
+            Set<String> regions = sharedPreferences.getStringSet(REGIONS, null);
+            if (regions == null || regions.size() == 0) {
+                regions = new HashSet<>();
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                regions.add(getString(R.string.default_region));
+                editor.putStringSet(REGIONS, regions);
+                editor.apply();
+
+                Toast.makeText(MainActivity.this, R.string.default_region_message, Toast.LENGTH_SHORT).show();
             }
         }
     }
