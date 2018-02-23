@@ -86,6 +86,10 @@ public class Quiz {
     }
 
     public String getCountryName(String country) {
-        return country.substring(country.indexOf("-") + 1, country.indexOf(".")).replace("_", " ");
+        return country.substring(country.indexOf("-") + 1).replace("_", " ").replace(".png", "");
+    }
+
+    public int getNumberOfGuesses() {
+        return numberOfGuesses;
     }
 }

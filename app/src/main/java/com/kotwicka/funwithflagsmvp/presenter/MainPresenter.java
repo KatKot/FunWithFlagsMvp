@@ -50,6 +50,11 @@ public class MainPresenter implements QuizContract.Presenter {
         return quiz.isLastAnswer();
     }
 
+    @Override
+    public int getTotalNumberOfGuesses() {
+        return quiz.getNumberOfGuesses();
+    }
+
     private void loadNextQuestion() {
         final String selectedCountry = quiz.selectCountry();
         mainView.setQuestionNumber(quiz.getQuestionNumber(), Quiz.NUMBER_OF_QUESTIONS);

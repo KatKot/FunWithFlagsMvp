@@ -22,5 +22,7 @@ public interface QuizContract {
         boolean validateChoice(final String choice);
 
         boolean isLastAnswer();
+
+        int getTotalNumberOfGuesses();
     }
 }
