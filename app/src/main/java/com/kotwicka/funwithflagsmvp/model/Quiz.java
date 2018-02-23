@@ -68,8 +68,17 @@ public class Quiz {
         this.numberOfChoices = numberOfChoices;
     }
 
+    public boolean isLastAnswer() {
+        return questionNumber == NUMBER_OF_QUESTIONS;
+    }
+
     public boolean isCorrectAnswer(final String country) {
-        return country.equals(correctCountryName);
+        ++numberOfGuesses;
+        boolean isCorrectChoice =  country.equals(correctCountryName);
+        if(isCorrectChoice) {
+            ++numberOfCorrectGuesses;
+        }
+        return isCorrectChoice;
     }
 
     public String getCorrectCountryName() {

@@ -1,8 +1,11 @@
 package com.kotwicka.funwithflagsmvp.view;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -10,6 +13,9 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewAnimationUtils;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -22,13 +28,11 @@ import com.kotwicka.funwithflagsmvp.presenter.MainPresenter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Queue;
-import java.util.Set;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class MainActivity extends AppCompatActivity implements QuizContract.View {
+public class MainActivity extends AppCompatActivity implements QuizContract.View, View.OnClickListener {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
@@ -38,7 +42,6 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
     private boolean hasPreferencesChanged = true;
     private QuizContract.Presenter mainPresenter;
     private SharedPreferences sharedPreferences;
-
 
     @BindView(R.id.flagImageView)
     ImageView flagImageView;
@@ -58,7 +61,15 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
     @BindView(R.id.row4LinearLayout)
     LinearLayout answersRow4;
 
+    @BindView(R.id.answerTextView)
+    TextView answerTextView;
+
+    @BindView(R.id.quizLinearLayout)
+    LinearLayout quizLinearLayout;
+
     LinearLayout[] answerLayouts;
+    Handler handler;
+    Animation shakeAnimation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,7 +81,10 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
 
         this.answerLayouts = new LinearLayout[]{answersRow1, answersRow2, answersRow3, answersRow4};
         this.mainPresenter = new MainPresenter(this);
+        this.handler = new Handler();
         this.sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        this.shakeAnimation = AnimationUtils.loadAnimation(this, R.anim.incorrect_shake);
+        this.shakeAnimation.setRepeatCount(3);
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
     }
 
@@ -122,15 +136,81 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
     }
 
     @Override
-    public void setCountryNameChoices(final List<String> countryNames) {
+    public void initializeChoices(final List<String> countryNames) {
         for (LinearLayout linearLayout : answerLayouts) {
             for (int i = 0; i < linearLayout.getChildCount(); i++) {
                 Button button = (Button) linearLayout.getChildAt(i);
                 if (!countryNames.isEmpty()) {
                     button.setText(countryNames.remove(0));
+                    button.setOnClickListener(this);
+                    button.setEnabled(true);
                 } else {
                     button.setVisibility(View.GONE);
                 }
+            }
+        }
+    }
+
+    @Override
+    public void onClick(View view) {
+        Button guessButton = (Button) view;
+        String guess = guessButton.getText().toString();
+        boolean isValidChoice = mainPresenter.validateChoice(guess);
+        if (isValidChoice) {
+            handleValidChoice(guess);
+        } else {
+            handleInvalidChoice(guessButton);
+        }
+    }
+
+    private void handleInvalidChoice(Button guessButton) {
+        flagImageView.startAnimation(shakeAnimation);
+        answerTextView.setText(getString(R.string.incorrect_answer));
+        answerTextView.setTextColor(getResources().getColor(R.color.incorrect_answer, getTheme()));
+        guessButton.setEnabled(false);
+    }
+
+    private void handleValidChoice(String choice) {
+        answerTextView.setText(choice + "!");
+        answerTextView.setTextColor(getResources().getColor(R.color.correct_answer, getTheme()));
+        disableAllButtons();
+        if (mainPresenter.isLastAnswer()) {
+
+        } else {
+            loadNextQuestion();
+        }
+    }
+
+    private void loadNextQuestion() {
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                animateAndLoadQuestion();
+            }
+        }, 2000);
+    }
+
+    private void animateAndLoadQuestion() {
+        int centerX = (quizLinearLayout.getLeft() + quizLinearLayout.getRight()) / 2;
+        int centerY = (quizLinearLayout.getTop() + quizLinearLayout.getBottom()) / 2;
+        int radius = Math.max(quizLinearLayout.getWidth(), quizLinearLayout.getHeight());
+        Animator animator = ViewAnimationUtils.createCircularReveal(quizLinearLayout, centerX, centerY, radius, 0);
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                answerTextView.setText("");
+                mainPresenter.loadNextFlag();
+            }
+        });
+        animator.setDuration(500);
+        animator.start();
+    }
+
+    private void disableAllButtons() {
+        for (LinearLayout linearLayout : answerLayouts) {
+            for (int i = 0; i < linearLayout.getChildCount(); i++) {
+                Button button = (Button) linearLayout.getChildAt(i);
+                button.setEnabled(false);
             }
         }
     }

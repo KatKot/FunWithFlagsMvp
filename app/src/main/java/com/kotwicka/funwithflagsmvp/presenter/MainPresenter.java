@@ -9,10 +9,7 @@ import com.kotwicka.funwithflagsmvp.model.Quiz;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.Set;
 
 public class MainPresenter implements QuizContract.Presenter {
@@ -38,11 +35,26 @@ public class MainPresenter implements QuizContract.Presenter {
         loadNextQuestion();
     }
 
+    @Override
+    public void loadNextFlag() {
+        loadNextQuestion();
+    }
+
+    @Override
+    public boolean validateChoice(final String choice) {
+        return quiz.isCorrectAnswer(choice);
+    }
+
+    @Override
+    public boolean isLastAnswer() {
+        return quiz.isLastAnswer();
+    }
+
     private void loadNextQuestion() {
         final String selectedCountry = quiz.selectCountry();
         mainView.setQuestionNumber(quiz.getQuestionNumber(), Quiz.NUMBER_OF_QUESTIONS);
         mainView.setFlag(createFlagPath(selectedCountry));
-        mainView.setCountryNameChoices(selectCountryNameChoices());
+        mainView.initializeChoices(selectCountryNameChoices());
     }
 
     private List<String> selectCountryNameChoices() {
