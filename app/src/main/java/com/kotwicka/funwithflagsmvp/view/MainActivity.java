@@ -1,6 +1,8 @@
 package com.kotwicka.funwithflagsmvp.view;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -10,15 +12,33 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import com.kotwicka.funwithflagsmvp.R;
+import com.kotwicka.funwithflagsmvp.contracts.QuizContract;
+import com.kotwicka.funwithflagsmvp.presenter.MainPresenter;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements QuizContract.View {
+
+    private static final String CHOICES = "pref_numberOfChoices";
+    private static final String REGIONS = "pref_regionsToInclude";
+
+    private QuizContract.Presenter mainPresenter;
+    private SharedPreferences sharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        this.mainPresenter = new MainPresenter(this);
+        this.sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mainPresenter.initQuiz(sharedPreferences.getStringSet(REGIONS, null), getAssets());
     }
 
     @Override
