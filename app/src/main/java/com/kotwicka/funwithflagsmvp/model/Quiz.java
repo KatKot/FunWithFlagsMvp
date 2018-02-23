@@ -9,12 +9,13 @@ public class Quiz {
 
     public static final int NUMBER_OF_QUESTIONS = 10;
 
-    public List<String> countries;
-    public List<String> selectedCountries;
+    private List<String> countries;
+    private List<String> selectedCountries;
     private Set<String> countryRegions;
     private String correctCountryName;
     private int numberOfGuesses;
     private int numberOfCorrectGuesses;
+    private int questionNumber;
 
     public Quiz() {
         this.countries = new ArrayList<>();
@@ -22,6 +23,14 @@ public class Quiz {
         this.countryRegions = new HashSet<>();
         this.numberOfCorrectGuesses = 0;
         this.numberOfCorrectGuesses = 0;
+        this.questionNumber = 0;
+    }
+
+    public String selectCountry() {
+        final String selectedCountry = selectedCountries.remove(0);
+        correctCountryName = selectedCountry;
+        ++questionNumber;
+        return selectedCountry;
     }
 
     public void addCountryToQuiz(final String country) {
@@ -42,5 +51,9 @@ public class Quiz {
 
     public int getCountriesSize() {
         return countries.size();
+    }
+
+    public int getQuestionNumber() {
+        return questionNumber;
     }
  }

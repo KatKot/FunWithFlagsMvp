@@ -33,7 +33,13 @@ public class MainPresenter implements QuizContract.Presenter {
     }
 
     private void loadQuestions() {
-        Log.d(TAG, "Selected countries : " + quiz.selectedCountries);
+        final String selectedCountry = quiz.selectCountry();
+        mainView.setQuestionNumber(quiz.getQuestionNumber(), Quiz.NUMBER_OF_QUESTIONS);
+        mainView.setFlag(createFlagPath(selectedCountry));
+    }
+
+    private String createFlagPath(final String selectedCountry) {
+        return selectedCountry.substring(0, selectedCountry.indexOf("-")) + "/" + selectedCountry;
     }
 
     private void selectQuizCountries() {
