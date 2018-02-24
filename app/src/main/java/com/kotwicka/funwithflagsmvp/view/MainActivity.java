@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -25,6 +26,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.facebook.share.model.ShareHashtag;
+import com.facebook.share.model.ShareLinkContent;
+import com.facebook.share.widget.ShareDialog;
 import com.kotwicka.funwithflagsmvp.R;
 import com.kotwicka.funwithflagsmvp.contracts.QuizContract;
 import com.kotwicka.funwithflagsmvp.presenter.MainPresenter;
@@ -99,7 +103,7 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
     protected void onStart() {
         super.onStart();
         if (hasPreferencesChanged) {
-            mainPresenter.initQuiz(sharedPreferences.getStringSet(REGIONS, null), Integer.valueOf(sharedPreferences.getString(CHOICES, null)), getAssets());
+            resetQuizView();
             hasPreferencesChanged = false;
         }
     }
@@ -186,7 +190,7 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
 
     private void showSummaryDialog() {
         int totalNumberOfGuesses = mainPresenter.getTotalNumberOfGuesses();
-        int percentOfCorrectAnswers = 1000 / totalNumberOfGuesses;
+        final int percentOfCorrectAnswers = 1000 / totalNumberOfGuesses;
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
         dialogBuilder.setCancelable(false);
         dialogBuilder.setTitle(R.string.summary);
@@ -194,11 +198,27 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
         dialogBuilder.setPositiveButton(R.string.reset_quiz, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                answerTextView.setText("");
-                mainPresenter.initQuiz(sharedPreferences.getStringSet(REGIONS, null), Integer.valueOf(sharedPreferences.getString(CHOICES, null)), getAssets());
+                resetQuizView();
+            }
+        });
+        dialogBuilder.setNeutralButton(getString(R.string.share_on_fb), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                ShareLinkContent shareContent = new ShareLinkContent.Builder()
+                        .setShareHashtag(new ShareHashtag.Builder().setHashtag(getString(R.string.share_fb_hashtag)).build())
+                        .setQuote(getString(R.string.share_fb_quote, percentOfCorrectAnswers))
+                        .setContentUrl(Uri.parse(getString(R.string.share_fb_link)))
+                        .build();
+                ShareDialog.show(MainActivity.this, shareContent);
+                resetQuizView();
             }
         });
         dialogBuilder.create().show();
+    }
+
+    private void resetQuizView() {
+        answerTextView.setText("");
+        mainPresenter.initQuiz(sharedPreferences.getStringSet(REGIONS, null), Integer.valueOf(sharedPreferences.getString(CHOICES, null)), getAssets());
     }
 
     private void loadNextQuestion() {
