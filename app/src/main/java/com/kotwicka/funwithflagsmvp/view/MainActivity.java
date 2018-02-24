@@ -186,7 +186,7 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
 
     private void showSummaryDialog() {
         int totalNumberOfGuesses = mainPresenter.getTotalNumberOfGuesses();
-        float percentOfCorrectAnswers = 1000 / (float) totalNumberOfGuesses;
+        int percentOfCorrectAnswers = 1000 / totalNumberOfGuesses;
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
         dialogBuilder.setCancelable(false);
         dialogBuilder.setTitle(R.string.summary);
