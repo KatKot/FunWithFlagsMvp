@@ -3,6 +3,7 @@ package com.kotwicka.funwithflagsmvp.presenter;
 import android.content.res.AssetManager;
 import android.util.Log;
 
+import com.kotwicka.funwithflagsmvp.components.DaggerQuizComponent;
 import com.kotwicka.funwithflagsmvp.contracts.QuizContract;
 import com.kotwicka.funwithflagsmvp.model.Quiz;
 
@@ -12,23 +13,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Inject;
+
 public class MainPresenter implements QuizContract.Presenter {
 
     private static final String TAG = MainPresenter.class.getSimpleName();
 
     private final QuizContract.View mainView;
-    private Quiz quiz;
-    private SecureRandom random;
+
+    @Inject
+    Quiz quiz;
+
+    @Inject
+    SecureRandom random;
 
     public MainPresenter(final QuizContract.View view) {
         this.mainView = view;
-        this.quiz = new Quiz();
-        this.random = new SecureRandom();
+        DaggerQuizComponent.create().inject(this);
     }
 
     @Override
     public void initQuiz(final Set<String> regions, final int choices, final AssetManager assets) {
-        this.quiz = new Quiz();
+        this.quiz.resetQuiz();
         loadCountries(regions, assets);
         quiz.setNumberOfChoices(choices);
         selectQuizCountries();

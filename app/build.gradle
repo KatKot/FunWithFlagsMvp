@@ -33,8 +33,13 @@ dependencies {
     implementation 'com.facebook.android:facebook-share:[4,5)'
     implementation 'com.facebook.android:facebook-android-sdk:[4,5)'
 
+    //dagger
+    implementation 'com.google.dagger:dagger:2.11'
+    annotationProcessor 'com.google.dagger:dagger-compiler:2.11'
+
     // test
     testImplementation 'junit:junit:4.12'
+    testImplementation 'org.mockito:mockito-all:1.8.4'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
 }

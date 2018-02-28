@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Inject;
+
 public class Quiz {
 
     public static final int NUMBER_OF_QUESTIONS = 10;
@@ -19,7 +21,12 @@ public class Quiz {
     private int questionNumber;
     private int numberOfChoices;
 
+    @Inject
     public Quiz() {
+        resetQuiz();
+    }
+
+    public void resetQuiz() {
         this.countries = new ArrayList<>();
         this.selectedCountries = new ArrayList<>();
         this.countryRegions = new HashSet<>();
