@@ -59,7 +59,7 @@ public class MainPresenter implements QuizContract.Presenter {
 
     private void loadNextQuestion() {
         final String selectedCountry = quiz.selectCountry();
-        mainView.setQuestionNumber(quiz.getQuestionNumber(), Quiz.NUMBER_OF_QUESTIONS);
+        mainView.setQuestionNumber(quiz.getQuestionNumber(), quiz.getNumberOfQuestions());
         mainView.setFlag(createFlagPath(selectedCountry));
         mainView.initializeChoices(selectCountryNameChoices());
     }
@@ -88,7 +88,7 @@ public class MainPresenter implements QuizContract.Presenter {
         int selectedFlagsCounter = 0;
         int numberOfAllFlags = quiz.getCountriesSize();
 
-        while (selectedFlagsCounter < Quiz.NUMBER_OF_QUESTIONS) {
+        while (selectedFlagsCounter < quiz.getNumberOfQuestions()) {
             String country = quiz.getCountryAt(random.nextInt(numberOfAllFlags));
             if (!quiz.alreadySelectedCountry(country)) {
                 quiz.addCountryToQuiz(country);
