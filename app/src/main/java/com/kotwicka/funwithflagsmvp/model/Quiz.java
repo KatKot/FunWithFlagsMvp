@@ -14,7 +14,6 @@ public class Quiz {
 
     private List<String> countries;
     private List<String> selectedCountries;
-    private Set<String> countryRegions;
     private String correctCountryName;
     private int numberOfGuesses;
     private int questionNumber;
@@ -28,7 +27,6 @@ public class Quiz {
     public void resetQuiz() {
         this.countries = new ArrayList<>();
         this.selectedCountries = new ArrayList<>();
-        this.countryRegions = new HashSet<>();
         this.questionNumber = 0;
         this.numberOfChoices = 0;
     }
