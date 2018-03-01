@@ -17,7 +17,6 @@ public class Quiz {
     private Set<String> countryRegions;
     private String correctCountryName;
     private int numberOfGuesses;
-    private int numberOfCorrectGuesses;
     private int questionNumber;
     private int numberOfChoices;
 
@@ -30,8 +29,6 @@ public class Quiz {
         this.countries = new ArrayList<>();
         this.selectedCountries = new ArrayList<>();
         this.countryRegions = new HashSet<>();
-        this.numberOfCorrectGuesses = 0;
-        this.numberOfCorrectGuesses = 0;
         this.questionNumber = 0;
         this.numberOfChoices = 0;
     }
@@ -81,11 +78,7 @@ public class Quiz {
 
     public boolean isCorrectAnswer(final String country) {
         ++numberOfGuesses;
-        boolean isCorrectChoice =  country.equals(correctCountryName);
-        if(isCorrectChoice) {
-            ++numberOfCorrectGuesses;
-        }
-        return isCorrectChoice;
+        return country.equals(correctCountryName);
     }
 
     public String getCorrectCountryName() {
