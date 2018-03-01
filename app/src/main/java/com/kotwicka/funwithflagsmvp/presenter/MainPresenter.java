@@ -5,15 +5,12 @@ import android.util.Log;
 
 import com.kotwicka.funwithflagsmvp.contracts.QuizContract;
 import com.kotwicka.funwithflagsmvp.model.Quiz;
-import com.kotwicka.funwithflagsmvp.view.MainActivity;
 
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
-import javax.inject.Inject;
 
 public class MainPresenter implements QuizContract.Presenter {
 
@@ -25,8 +22,7 @@ public class MainPresenter implements QuizContract.Presenter {
 
     private final SecureRandom random;
 
-    @Inject
-    public MainPresenter(final MainActivity view, final Quiz quiz, final SecureRandom secureRandom) {
+    public MainPresenter(final QuizContract.View view, final Quiz quiz, final SecureRandom secureRandom) {
         this.mainView = view;
         this.quiz  = quiz;
         this.random = secureRandom;

@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
     LinearLayout quizLinearLayout;
 
     @Inject
-    MainPresenter mainPresenter;
+    QuizContract.Presenter mainPresenter;
 
     LinearLayout[] answerLayouts;
     Handler handler;
