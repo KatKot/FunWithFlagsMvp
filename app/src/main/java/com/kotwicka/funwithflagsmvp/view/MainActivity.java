@@ -30,7 +30,9 @@ import com.facebook.share.model.ShareHashtag;
 import com.facebook.share.model.ShareLinkContent;
 import com.facebook.share.widget.ShareDialog;
 import com.kotwicka.funwithflagsmvp.R;
+import com.kotwicka.funwithflagsmvp.components.DaggerQuizComponent;
 import com.kotwicka.funwithflagsmvp.contracts.QuizContract;
+import com.kotwicka.funwithflagsmvp.modules.QuizModule;
 import com.kotwicka.funwithflagsmvp.presenter.MainPresenter;
 
 import java.io.IOException;
@@ -38,6 +40,8 @@ import java.io.InputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import javax.inject.Inject;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -50,7 +54,6 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
     private static final String REGIONS = "pref_regionsToInclude";
 
     private boolean hasPreferencesChanged = true;
-    private QuizContract.Presenter mainPresenter;
     private SharedPreferences sharedPreferences;
 
     @BindView(R.id.flagImageView)
@@ -77,6 +80,9 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
     @BindView(R.id.quizLinearLayout)
     LinearLayout quizLinearLayout;
 
+    @Inject
+    MainPresenter mainPresenter;
+
     LinearLayout[] answerLayouts;
     Handler handler;
     Animation shakeAnimation;
@@ -88,9 +94,9 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         ButterKnife.bind(this);
+        DaggerQuizComponent.builder().quizModule(new QuizModule(this)).build().inject(this);
 
         this.answerLayouts = new LinearLayout[]{answersRow1, answersRow2, answersRow3, answersRow4};
-        this.mainPresenter = new MainPresenter(this);
         this.handler = new Handler();
         this.sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         this.shakeAnimation = AnimationUtils.loadAnimation(this, R.anim.incorrect_shake);

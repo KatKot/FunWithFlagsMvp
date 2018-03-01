@@ -3,9 +3,9 @@ package com.kotwicka.funwithflagsmvp.presenter;
 import android.content.res.AssetManager;
 import android.util.Log;
 
-import com.kotwicka.funwithflagsmvp.components.DaggerQuizComponent;
 import com.kotwicka.funwithflagsmvp.contracts.QuizContract;
 import com.kotwicka.funwithflagsmvp.model.Quiz;
+import com.kotwicka.funwithflagsmvp.view.MainActivity;
 
 import java.io.IOException;
 import java.security.SecureRandom;
@@ -21,15 +21,15 @@ public class MainPresenter implements QuizContract.Presenter {
 
     private final QuizContract.View mainView;
 
-    @Inject
-    Quiz quiz;
+    private final Quiz quiz;
+
+    private final SecureRandom random;
 
     @Inject
-    SecureRandom random;
-
-    public MainPresenter(final QuizContract.View view) {
+    public MainPresenter(final MainActivity view, final Quiz quiz, final SecureRandom secureRandom) {
         this.mainView = view;
-        DaggerQuizComponent.create().inject(this);
+        this.quiz  = quiz;
+        this.random = secureRandom;
     }
 
     @Override
