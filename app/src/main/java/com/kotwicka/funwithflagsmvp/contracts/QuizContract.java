@@ -1,5 +1,6 @@
 package com.kotwicka.funwithflagsmvp.contracts;
 
+import android.content.Context;
 import android.content.res.AssetManager;
 
 import java.util.List;
@@ -11,13 +12,17 @@ public interface QuizContract {
 
         void setQuestionNumber(final int currentQuestionNumber, final int questionsNumber);
 
-        void initializeChoices(final List<String> countryNames);
+        Context getContext();
     }
 
     interface Presenter {
-        void initQuiz(final Set<String> regions, final int choices, final AssetManager assets);
+        void loadCountries(final Set<String> regions, final int choices, final AssetManager assets);
 
-        void loadNextFlag();
+        void selectCountriesForQuiz();
+
+        void loadNextQuestion();
+
+        List<String> selectPossibleAnswers();
 
         boolean validateChoice(final String choice);
 

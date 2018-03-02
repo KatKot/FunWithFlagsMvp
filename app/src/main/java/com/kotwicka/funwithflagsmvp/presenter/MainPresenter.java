@@ -29,17 +29,47 @@ public class MainPresenter implements QuizContract.Presenter {
     }
 
     @Override
-    public void initQuiz(final Set<String> regions, final int choices, final AssetManager assets) {
-        this.quiz.resetQuiz();
+    public void loadCountries(final Set<String> regions, final int choices, final AssetManager assets) {
+        initializeQuiz(choices);
         loadCountries(regions, assets);
-        quiz.setNumberOfChoices(choices);
-        selectQuizCountries();
-        loadNextQuestion();
     }
 
     @Override
-    public void loadNextFlag() {
-        loadNextQuestion();
+    public void selectCountriesForQuiz() {
+        int selectedFlagsCounter = 0;
+        int numberOfAllFlags = quiz.getCountriesSize();
+
+        while (selectedFlagsCounter < quiz.getNumberOfQuestions()) {
+            String country = quiz.getCountryAt(random.nextInt(numberOfAllFlags));
+            if (!quiz.alreadySelectedCountry(country)) {
+                quiz.addCountryToQuiz(country);
+                ++selectedFlagsCounter;
+            }
+        }
+    }
+
+    @Override
+    public void loadNextQuestion() {
+        final String selectedCountry = quiz.selectCountry();
+        mainView.setQuestionNumber(quiz.getQuestionNumber(), quiz.getNumberOfQuestions());
+        mainView.setFlag(createFlagPath(selectedCountry));
+    }
+
+    @Override
+    public List<String> selectPossibleAnswers() {
+        final List<String> selectedChoices = new ArrayList<>();
+        while (selectedChoices.size() < quiz.getNumberOfChoices()) {
+            String country = quiz.getCountryAt(random.nextInt(quiz.getCountriesSize()));
+            String countryName = quiz.getCountryName(country);
+            if (!selectedChoices.contains(countryName)) {
+                selectedChoices.add(countryName);
+            }
+        }
+        if (!selectedChoices.contains(quiz.getCorrectCountryName())) {
+            selectedChoices.add(random.nextInt(selectedChoices.size()), quiz.getCorrectCountryName());
+            selectedChoices.remove(selectedChoices.size() - 1);
+        }
+        return selectedChoices;
     }
 
     @Override
@@ -57,44 +87,13 @@ public class MainPresenter implements QuizContract.Presenter {
         return quiz.getNumberOfGuesses();
     }
 
-    private void loadNextQuestion() {
-        final String selectedCountry = quiz.selectCountry();
-        mainView.setQuestionNumber(quiz.getQuestionNumber(), quiz.getNumberOfQuestions());
-        mainView.setFlag(createFlagPath(selectedCountry));
-        mainView.initializeChoices(selectCountryNameChoices());
-    }
-
-    private List<String> selectCountryNameChoices() {
-        final List<String> selectedChoices = new ArrayList<>();
-        while (selectedChoices.size() < quiz.getNumberOfChoices()) {
-            String country = quiz.getCountryAt(random.nextInt(quiz.getCountriesSize()));
-            String countryName = quiz.getCountryName(country);
-            if (!selectedChoices.contains(countryName)) {
-                selectedChoices.add(countryName);
-            }
-        }
-        if (!selectedChoices.contains(quiz.getCorrectCountryName())) {
-            selectedChoices.add(random.nextInt(selectedChoices.size()), quiz.getCorrectCountryName());
-            selectedChoices.remove(selectedChoices.size() - 1);
-        }
-        return selectedChoices;
+    private void initializeQuiz(final int choices) {
+        this.quiz.resetQuiz();
+        this.quiz.setNumberOfChoices(choices);
     }
 
     private String createFlagPath(final String selectedCountry) {
         return selectedCountry.substring(0, selectedCountry.indexOf("-")) + "/" + selectedCountry;
-    }
-
-    private void selectQuizCountries() {
-        int selectedFlagsCounter = 0;
-        int numberOfAllFlags = quiz.getCountriesSize();
-
-        while (selectedFlagsCounter < quiz.getNumberOfQuestions()) {
-            String country = quiz.getCountryAt(random.nextInt(numberOfAllFlags));
-            if (!quiz.alreadySelectedCountry(country)) {
-                quiz.addCountryToQuiz(country);
-                ++selectedFlagsCounter;
-            }
-        }
     }
 
     private void loadCountries(final Set<String> regions, final AssetManager assets) {

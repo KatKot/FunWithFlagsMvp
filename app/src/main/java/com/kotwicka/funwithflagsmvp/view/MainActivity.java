@@ -2,6 +2,7 @@ package com.kotwicka.funwithflagsmvp.view;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -19,7 +20,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewAnimationUtils;
 import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -33,7 +33,6 @@ import com.kotwicka.funwithflagsmvp.R;
 import com.kotwicka.funwithflagsmvp.components.DaggerQuizComponent;
 import com.kotwicka.funwithflagsmvp.contracts.QuizContract;
 import com.kotwicka.funwithflagsmvp.modules.QuizModule;
-import com.kotwicka.funwithflagsmvp.presenter.MainPresenter;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,7 +53,6 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
     private static final String REGIONS = "pref_regionsToInclude";
 
     private boolean hasPreferencesChanged = true;
-    private SharedPreferences sharedPreferences;
 
     @BindView(R.id.flagImageView)
     ImageView flagImageView;
@@ -83,33 +81,35 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
     @Inject
     QuizContract.Presenter mainPresenter;
 
-    LinearLayout[] answerLayouts;
+    @Inject
     Handler handler;
+
+    @Inject
     Animation shakeAnimation;
+
+    @Inject
+    SharedPreferences sharedPreferences;
+
+    LinearLayout[] answerLayouts;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
+
         ButterKnife.bind(this);
         DaggerQuizComponent.builder().quizModule(new QuizModule(this)).build().inject(this);
 
-        this.answerLayouts = new LinearLayout[]{answersRow1, answersRow2, answersRow3, answersRow4};
-        this.handler = new Handler();
-        this.sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        this.shakeAnimation = AnimationUtils.loadAnimation(this, R.anim.incorrect_shake);
-        this.shakeAnimation.setRepeatCount(3);
-        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
-        PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
+        initializeData();
+        listenOnPreferenceChanges();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         if (hasPreferencesChanged) {
-            resetQuizView();
+            resetQuiz();
             hasPreferencesChanged = false;
         }
     }
@@ -148,116 +148,19 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
     }
 
     @Override
-    public void initializeChoices(final List<String> countryNames) {
-        for (LinearLayout linearLayout : answerLayouts) {
-            for (int i = 0; i < linearLayout.getChildCount(); i++) {
-                Button button = (Button) linearLayout.getChildAt(i);
-                if (!countryNames.isEmpty()) {
-                    button.setText(countryNames.remove(0));
-                    button.setOnClickListener(this);
-                    button.setEnabled(true);
-                    button.setVisibility(View.VISIBLE);
-                } else {
-                    button.setVisibility(View.GONE);
-                }
-            }
-        }
+    public Context getContext() {
+        return this;
     }
 
     @Override
     public void onClick(View view) {
-        Button guessButton = (Button) view;
-        String guess = guessButton.getText().toString();
-        boolean isValidChoice = mainPresenter.validateChoice(guess);
+        final Button guessButton = (Button) view;
+        final String guess = guessButton.getText().toString();
+        final boolean isValidChoice = mainPresenter.validateChoice(guess);
         if (isValidChoice) {
             handleValidChoice(guess);
         } else {
             handleInvalidChoice(guessButton);
-        }
-    }
-
-    private void handleInvalidChoice(Button guessButton) {
-        flagImageView.startAnimation(shakeAnimation);
-        answerTextView.setText(getString(R.string.incorrect_answer));
-        answerTextView.setTextColor(getResources().getColor(R.color.incorrect_answer, getTheme()));
-        guessButton.setEnabled(false);
-    }
-
-    private void handleValidChoice(String choice) {
-        answerTextView.setText(choice + "!");
-        answerTextView.setTextColor(getResources().getColor(R.color.correct_answer, getTheme()));
-        disableAllButtons();
-        if (mainPresenter.isLastAnswer()) {
-            showSummaryDialog();
-        } else {
-            loadNextQuestion();
-        }
-    }
-
-    private void showSummaryDialog() {
-        int totalNumberOfGuesses = mainPresenter.getTotalNumberOfGuesses();
-        final int percentOfCorrectAnswers = 1000 / totalNumberOfGuesses;
-        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
-        dialogBuilder.setCancelable(false);
-        dialogBuilder.setTitle(R.string.summary);
-        dialogBuilder.setMessage(getString(R.string.results, totalNumberOfGuesses, percentOfCorrectAnswers));
-        dialogBuilder.setPositiveButton(R.string.reset_quiz, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                resetQuizView();
-            }
-        });
-        dialogBuilder.setNeutralButton(getString(R.string.share_on_fb), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                ShareLinkContent shareContent = new ShareLinkContent.Builder()
-                        .setShareHashtag(new ShareHashtag.Builder().setHashtag(getString(R.string.share_fb_hashtag)).build())
-                        .setQuote(getString(R.string.share_fb_quote, percentOfCorrectAnswers))
-                        .setContentUrl(Uri.parse(getString(R.string.share_fb_link)))
-                        .build();
-                ShareDialog.show(MainActivity.this, shareContent);
-                resetQuizView();
-            }
-        });
-        dialogBuilder.create().show();
-    }
-
-    private void resetQuizView() {
-        answerTextView.setText("");
-        mainPresenter.initQuiz(sharedPreferences.getStringSet(REGIONS, null), Integer.valueOf(sharedPreferences.getString(CHOICES, null)), getAssets());
-    }
-
-    private void loadNextQuestion() {
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                animateAndLoadQuestion();
-            }
-        }, 2000);
-    }
-
-    private void animateAndLoadQuestion() {
-        int centerX = (quizLinearLayout.getLeft() + quizLinearLayout.getRight()) / 2;
-        int centerY = (quizLinearLayout.getTop() + quizLinearLayout.getBottom()) / 2;
-        int radius = Math.max(quizLinearLayout.getWidth(), quizLinearLayout.getHeight());
-        Animator animator = ViewAnimationUtils.createCircularReveal(quizLinearLayout, centerX, centerY, radius, 0);
-        animator.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                answerTextView.setText("");
-                mainPresenter.loadNextFlag();
-            }
-        });
-        animator.setDuration(500);
-        animator.start();
-    }
-
-    private void disableAllButtons() {
-        for (LinearLayout linearLayout : answerLayouts) {
-            for (int i = 0; i < linearLayout.getChildCount(); i++) {
-                Button button = (Button) linearLayout.getChildAt(i);
-                button.setEnabled(false);
-            }
         }
     }
 
@@ -276,5 +179,123 @@ public class MainActivity extends AppCompatActivity implements QuizContract.View
                 Toast.makeText(MainActivity.this, R.string.default_region_message, Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    private void listenOnPreferenceChanges() {
+        PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
+    }
+
+    private void initializeData() {
+        this.answerLayouts = new LinearLayout[]{answersRow1, answersRow2, answersRow3, answersRow4};
+        this.shakeAnimation.setRepeatCount(3);
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+    }
+
+    private void resetQuiz() {
+        answerTextView.setText("");
+        mainPresenter.loadCountries(sharedPreferences.getStringSet(REGIONS, null), Integer.valueOf(sharedPreferences.getString(CHOICES, null)), getAssets());
+        mainPresenter.selectCountriesForQuiz();
+        selectNextQuestionAndAnswers();
+    }
+
+    private void selectNextQuestionAndAnswers() {
+        answerTextView.setText("");
+        mainPresenter.loadNextQuestion();
+        initializeChoiceButtons(mainPresenter.selectPossibleAnswers());
+    }
+
+    private void initializeChoiceButtons(final List<String> countryNames) {
+        for (LinearLayout linearLayout : answerLayouts) {
+            for (int i = 0; i < linearLayout.getChildCount(); i++) {
+                Button button = (Button) linearLayout.getChildAt(i);
+                if (!countryNames.isEmpty()) {
+                    button.setText(countryNames.remove(0));
+                    button.setOnClickListener(this);
+                    button.setEnabled(true);
+                    button.setVisibility(View.VISIBLE);
+                } else {
+                    button.setVisibility(View.GONE);
+                }
+            }
+        }
+    }
+
+    private void handleInvalidChoice(Button guessButton) {
+        flagImageView.startAnimation(shakeAnimation);
+        answerTextView.setText(getString(R.string.incorrect_answer));
+        answerTextView.setTextColor(getResources().getColor(R.color.incorrect_answer, getTheme()));
+        guessButton.setEnabled(false);
+    }
+
+    private void handleValidChoice(String choice) {
+        answerTextView.setText(getString(R.string.valid_choice, choice));
+        answerTextView.setTextColor(getResources().getColor(R.color.correct_answer, getTheme()));
+        disableAllButtons();
+        if (mainPresenter.isLastAnswer()) {
+            showSummaryDialog();
+        } else {
+            planAnimatedLoadingOfNextQuestion();
+        }
+    }
+
+    private void disableAllButtons() {
+        for (LinearLayout linearLayout : answerLayouts) {
+            for (int i = 0; i < linearLayout.getChildCount(); i++) {
+                Button button = (Button) linearLayout.getChildAt(i);
+                button.setEnabled(false);
+            }
+        }
+    }
+
+    private void planAnimatedLoadingOfNextQuestion() {
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                animateAndLoadQuestion();
+            }
+        }, 2000);
+    }
+
+    private void animateAndLoadQuestion() {
+        int centerX = (quizLinearLayout.getLeft() + quizLinearLayout.getRight()) / 2;
+        int centerY = (quizLinearLayout.getTop() + quizLinearLayout.getBottom()) / 2;
+        int radius = Math.max(quizLinearLayout.getWidth(), quizLinearLayout.getHeight());
+        Animator animator = ViewAnimationUtils.createCircularReveal(quizLinearLayout, centerX, centerY, radius, 0);
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                selectNextQuestionAndAnswers();
+            }
+        });
+        animator.setDuration(500);
+        animator.start();
+    }
+
+    private void showSummaryDialog() {
+        int totalNumberOfGuesses = mainPresenter.getTotalNumberOfGuesses();
+        final int percentOfCorrectAnswers = 1000 / totalNumberOfGuesses;
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        dialogBuilder.setCancelable(false);
+        dialogBuilder.setTitle(R.string.summary);
+        dialogBuilder.setMessage(getString(R.string.results, totalNumberOfGuesses, percentOfCorrectAnswers));
+        dialogBuilder.setPositiveButton(R.string.reset_quiz, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                resetQuiz();
+            }
+        });
+        dialogBuilder.setNeutralButton(getString(R.string.share_on_fb), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                ShareLinkContent shareContent = new ShareLinkContent.Builder()
+                        .setShareHashtag(new ShareHashtag.Builder().setHashtag(getString(R.string.share_fb_hashtag)).build())
+                        .setQuote(getString(R.string.share_fb_quote, percentOfCorrectAnswers))
+                        .setContentUrl(Uri.parse(getString(R.string.share_fb_link)))
+                        .build();
+                ShareDialog.show(MainActivity.this, shareContent);
+                resetQuiz();
+            }
+        });
+        dialogBuilder.create().show();
     }
 }

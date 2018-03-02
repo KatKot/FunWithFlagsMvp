@@ -2,10 +2,10 @@ package com.kotwicka.funwithflagsmvp.presenter;
 
 import android.content.res.AssetManager;
 
+import com.google.common.collect.Sets;
 import com.kotwicka.funwithflagsmvp.contracts.QuizContract;
 import com.kotwicka.funwithflagsmvp.model.Quiz;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -15,12 +15,11 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -45,73 +44,143 @@ public class MainPresenterTest {
     private MainPresenter mainPresenter;
 
     @Test
-    public void shouldInitializeQuiz() throws IOException {
+    public void shouldResetQuizAndLoadCountries() throws IOException {
         // given
         final String africa = "Africa";
         final String africaPath = "Africa-Algeria.png";
         final String africaPath2 = "Africa-Egypt.png";
         final String asia = "Asia";
         final String asiaPath = "Asia-Japan.png";
-        final Set<String> regions = new HashSet<>();
-        regions.add(africa);
-        regions.add(asia);
-        final int choices = 6;
-        final int coutriesCount = 3;
-        final int questionsCount = 2;
-        final int questionNumber = 1;
+        final Set<String> regions = Sets.newHashSet(africa, asia);
+        final int choices = 2;
+        final int countriesCount = 3;
 
         // when
-        when(assetManager.list(africa)).thenReturn(new String [] {africaPath, africaPath2});
-        when(assetManager.list(asia)).thenReturn(new String [] {asiaPath});
-        when(quiz.getCountriesSize()).thenReturn(coutriesCount);
-        when(quiz.getNumberOfQuestions()).thenReturn(questionsCount);
-        when(quiz.selectCountry()).thenReturn(asiaPath);
-        when(quiz.getQuestionNumber()).thenReturn(questionNumber);
-        mainPresenter.initQuiz(regions, choices, assetManager);
+        when(assetManager.list(africa)).thenReturn(new String[]{africaPath, africaPath2});
+        when(assetManager.list(asia)).thenReturn(new String[]{asiaPath});
+
+        mainPresenter.loadCountries(regions, choices, assetManager);
 
         // then
         verify(quiz).resetQuiz();
+        verify(quiz).setNumberOfChoices(choices);
         final ArgumentCaptor<String> countryPathCaptor = ArgumentCaptor.forClass(String.class);
-        verify(quiz, times(coutriesCount)).addCountry(countryPathCaptor.capture());
+        verify(quiz, times(countriesCount)).addCountry(countryPathCaptor.capture());
         final List<String> actualAddedCountries = countryPathCaptor.getAllValues();
         assertThat(actualAddedCountries).containsOnly(africaPath, africaPath2, asiaPath);
-        verify(quiz).setNumberOfChoices(choices);
-        verify(quiz, times(questionsCount)).addCountryToQuiz(anyString());
-        verify(quiz).selectCountry();
-        verify(view).setQuestionNumber(questionNumber, questionsCount);
-        verify(view).setFlag(anyString());
-        verify(view).initializeChoices(anyListOf(String.class));
     }
 
     @Test
-    public void shouldLoadNextFlag() {
+    public void shouldAddGivenNumberOfCountriesToQuiz() {
+        // given
+        final int countrySize = 4;
+        final int questionSize = 3;
+        final String country = "Europe-Poland.png";
+        final String country2 = "Europe-France.png";
+        final String country3 = "Europe-Italy.png";
+
+        // when
+        when(quiz.getCountriesSize()).thenReturn(countrySize);
+        when(quiz.getNumberOfQuestions()).thenReturn(questionSize);
+        when(quiz.getCountryAt(anyInt())).thenReturn(country).thenReturn(country2).thenReturn(country3);
+
+        mainPresenter.selectCountriesForQuiz();
+
+        // then
+        final ArgumentCaptor<String> countryArgumentCaptor = ArgumentCaptor.forClass(String.class);
+        verify(quiz, times(questionSize)).alreadySelectedCountry(anyString());
+        verify(quiz, times(questionSize)).addCountryToQuiz(countryArgumentCaptor.capture());
+        final List<String> actualAddedCountries = countryArgumentCaptor.getAllValues();
+        assertThat(actualAddedCountries).containsOnly(country, country2, country3);
+        verify(secureRandom, times(questionSize)).nextInt(countrySize);
+    }
+
+    @Test
+    public void shouldLoadNextQuestion() {
         // given
         final String nextCountry = "Africa-Algeria.png";
         final String expectedFlagPath = "Africa/Africa-Algeria.png";
-        final String correctCountryName = "Algeria";
-        final String wrongCountryName = "Egypt";
         final int questionNumber = 5;
         final int numberOfQuestions = 7;
-        final int numberOfChoices = 2;
 
         // when
         when(quiz.selectCountry()).thenReturn(nextCountry);
         when(quiz.getQuestionNumber()).thenReturn(questionNumber);
         when(quiz.getNumberOfQuestions()).thenReturn(numberOfQuestions);
-        when(quiz.getNumberOfChoices()).thenReturn(numberOfChoices);
-        when(quiz.getCountryName(anyString())).thenReturn(correctCountryName).thenReturn(wrongCountryName);
-        when(quiz.getCorrectCountryName()).thenReturn(correctCountryName);
 
-        mainPresenter.loadNextFlag();
+        mainPresenter.loadNextQuestion();
 
         // then
-        verify(view).setQuestionNumber(questionNumber, numberOfQuestions);
+        verify(quiz).selectCountry();
         verify(view).setFlag(expectedFlagPath);
-        final ArgumentCaptor<List> choicesCaptor = ArgumentCaptor.forClass(List.class);
-        verify(view).initializeChoices(choicesCaptor.capture());
-        assertThat(choicesCaptor.getValue()).containsOnly(correctCountryName, wrongCountryName);
+        verify(view).setQuestionNumber(questionNumber, numberOfQuestions);
     }
 
+    @Test
+    public void shouldSelectGivenNumberOfChoicesIncludingCorerctOne() {
+        // given
+        final int numberOfChoices = 4;
+        final int countriesSize = 20;
+        final String correctCountry = "Europe-Poland.png";
+        final String incorrectCountry = "Europe-Italy.png";
+        final String incorrectCountry2 = "Europe-France.png";
+        final String incorrectCountry3 = "Europe-Greece.png";
+        final String incorrectCountry4 = "Europe-Spain.png";
+        final String correctCountryName = "Poland";
+        final String incorrectCountryName = "Italy";
+        final String incorrectCountry2Name = "France";
+        final String incorrectCountry3Name = "Greece";
+        final String incorrectCountry4Name = "Spain";
+
+        // when
+        when(quiz.getNumberOfChoices()).thenReturn(numberOfChoices);
+        when(quiz.getCountriesSize()).thenReturn(countriesSize);
+        when(quiz.getCountryAt(anyInt())).thenReturn(incorrectCountry).thenReturn(correctCountry).thenReturn(incorrectCountry2).thenReturn(incorrectCountry3).thenReturn(incorrectCountry4);
+        when(quiz.getCountryName(correctCountry)).thenReturn(correctCountryName);
+        when(quiz.getCountryName(incorrectCountry)).thenReturn(incorrectCountryName);
+        when(quiz.getCountryName(incorrectCountry2)).thenReturn(incorrectCountry2Name);
+        when(quiz.getCountryName(incorrectCountry3)).thenReturn(incorrectCountry3Name);
+        when(quiz.getCountryName(incorrectCountry4)).thenReturn(incorrectCountry4Name);
+        when(quiz.getCorrectCountryName()).thenReturn(correctCountryName);
+
+        final List<String> countries = mainPresenter.selectPossibleAnswers();
+
+        // then
+        assertThat(countries).containsOnly(correctCountryName, incorrectCountryName, incorrectCountry2Name, incorrectCountry3Name);
+    }
+
+    @Test
+    public void shouldSelectGivenNumberOfChoicesReplacingOneWithCorrectOne() {
+        // given
+        final int numberOfChoices = 4;
+        final int countriesSize = 20;
+        final String correctCountry = "Europe-Poland.png";
+        final String incorrectCountry = "Europe-Italy.png";
+        final String incorrectCountry2 = "Europe-France.png";
+        final String incorrectCountry3 = "Europe-Greece.png";
+        final String incorrectCountry4 = "Europe-Spain.png";
+        final String correctCountryName = "Poland";
+        final String incorrectCountryName = "Italy";
+        final String incorrectCountry2Name = "France";
+        final String incorrectCountry3Name = "Greece";
+        final String incorrectCountry4Name = "Spain";
+
+        // when
+        when(quiz.getNumberOfChoices()).thenReturn(numberOfChoices);
+        when(quiz.getCountriesSize()).thenReturn(countriesSize);
+        when(quiz.getCountryAt(anyInt())).thenReturn(incorrectCountry).thenReturn(incorrectCountry2).thenReturn(incorrectCountry3).thenReturn(incorrectCountry4);
+        when(quiz.getCountryName(correctCountry)).thenReturn(correctCountryName);
+        when(quiz.getCountryName(incorrectCountry)).thenReturn(incorrectCountryName);
+        when(quiz.getCountryName(incorrectCountry2)).thenReturn(incorrectCountry2Name);
+        when(quiz.getCountryName(incorrectCountry3)).thenReturn(incorrectCountry3Name);
+        when(quiz.getCountryName(incorrectCountry4)).thenReturn(incorrectCountry4Name);
+        when(quiz.getCorrectCountryName()).thenReturn(correctCountryName);
+
+        final List<String> countries = mainPresenter.selectPossibleAnswers();
+
+        // then
+        assertThat(countries).contains(correctCountryName).hasSize(4);
+    }
 
     @Test
     public void shouldValidateChoice() {
@@ -154,5 +223,4 @@ public class MainPresenterTest {
         assertThat(actualIsLastAnswer).isEqualTo(isLastAnswer);
         verify(quiz).isLastAnswer();
     }
-
 }

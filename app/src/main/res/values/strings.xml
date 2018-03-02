@@ -22,4 +22,5 @@
     <string name="share_fb_link">https://dtbhzdanf36fd.cloudfront.net/courses/49/Countries,_Languages_and_Nationalities_original.jpg</string>
     <string name="share_fb_quote">Fun with flags is so fun! I just guessed %1$d%% of flags!</string>
     <string name="share_fb_hashtag">#funwithflags</string>
+    <string name="valid_choice">%1$s !</string>
 </resources>
